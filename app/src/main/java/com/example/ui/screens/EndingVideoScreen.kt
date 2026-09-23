@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
@@ -23,7 +24,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -32,6 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -58,20 +62,20 @@ import com.example.ui.util.VideoPlayerHelper
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun IntroVideoScreen(
+fun EndingVideoScreen(
     tts: AppTextToSpeech,
-    onContinue: () -> Unit
+    onReturnToChat: () -> Unit,
+    onExitApp: () -> Unit
 ) {
     val context = LocalContext.current
     var selectedPlayer by remember { mutableStateOf(VideoPlayerHelper.PlayerType.INTERNAL) }
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
 
-    val videoEmbedUrl = VideoPlayerHelper.INTRO_VIDEO_URL
-    val videoDirectUrl = VideoPlayerHelper.INTRO_DIRECT_URL
+    val videoEmbedUrl = VideoPlayerHelper.ENDING_VIDEO_URL
+    val videoDirectUrl = VideoPlayerHelper.ENDING_DIRECT_URL
 
-    // Maklumkan pengguna yang tidak tahu membaca melalui suara automatik
     LaunchedEffect(Unit) {
-        tts.speak("Selamat datang ke Multi AI. Tonton video pengenalan dengan pemain dalaman, MX Player, atau VLC. Ketik butang hijau besar di bawah bila bersedia.")
+        tts.speak("Terima kasih telah menggunakan Multi AI. Video penutup kini dimainkan. Anda boleh kembali ke ruang sembang bila-bila masa atau menutup aplikasi.")
     }
 
     DisposableEffect(Unit) {
@@ -85,10 +89,10 @@ fun IntroVideoScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .testTag("intro_video_screen")
+            .testTag("ending_video_screen")
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header Bar & Player Selection Toolbar
+            // Header Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color(0xFF0F172A)
@@ -108,11 +112,11 @@ fun IntroVideoScreen(
                                 modifier = Modifier
                                     .size(12.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFFEF4444))
+                                    .background(Color(0xFFEAB308))
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "INTRO VIDEO PLAYER",
+                                text = "ENDING VIDEO & OUTRO",
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 1.sp
@@ -128,7 +132,7 @@ fun IntroVideoScreen(
                                 .background(Color(0xFF00E5FF).copy(alpha = 0.25f)),
                             color = Color.Transparent,
                             onClick = {
-                                tts.speak("Pilih pemain media yang anda gemari di atas, atau ketik butang hijau di bawah untuk terus masuk ke ruang sembang.")
+                                tts.speak("Ketik butang biru untuk kembali ke perbualan, atau butang merah untuk menutup aplikasi sepenuhnya.")
                             }
                         ) {
                             Row(
@@ -153,12 +157,11 @@ fun IntroVideoScreen(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Player Selection Tabs: Internal, MX Player, VLC, Sistem
+                    // Player Selection Tabs
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // 1. Internal Player
                         PlayerSelectBadge(
                             label = "📱 Dalaman",
                             isSelected = selectedPlayer == VideoPlayerHelper.PlayerType.INTERNAL,
@@ -169,7 +172,6 @@ fun IntroVideoScreen(
                             webViewInstance?.loadUrl(videoEmbedUrl)
                         }
 
-                        // 2. MX Player
                         PlayerSelectBadge(
                             label = "⚡ MX Player",
                             isSelected = selectedPlayer == VideoPlayerHelper.PlayerType.MX_PLAYER,
@@ -177,10 +179,9 @@ fun IntroVideoScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             selectedPlayer = VideoPlayerHelper.PlayerType.MX_PLAYER
-                            VideoPlayerHelper.launchMxPlayer(context, videoDirectUrl, "Multi AI - Intro Video")
+                            VideoPlayerHelper.launchMxPlayer(context, videoDirectUrl, "Multi AI - Ending Video")
                         }
 
-                        // 3. VLC Player
                         PlayerSelectBadge(
                             label = "🧡 VLC",
                             isSelected = selectedPlayer == VideoPlayerHelper.PlayerType.VLC,
@@ -188,10 +189,9 @@ fun IntroVideoScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             selectedPlayer = VideoPlayerHelper.PlayerType.VLC
-                            VideoPlayerHelper.launchVlcPlayer(context, videoDirectUrl, "Multi AI - Intro Video")
+                            VideoPlayerHelper.launchVlcPlayer(context, videoDirectUrl, "Multi AI - Ending Video")
                         }
 
-                        // 4. Sistem Player
                         PlayerSelectBadge(
                             label = "🚀 Sistem",
                             isSelected = selectedPlayer == VideoPlayerHelper.PlayerType.SYSTEM_CHOOSER,
@@ -199,20 +199,19 @@ fun IntroVideoScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             selectedPlayer = VideoPlayerHelper.PlayerType.SYSTEM_CHOOSER
-                            VideoPlayerHelper.launchSystemPlayer(context, videoDirectUrl, "Multi AI - Intro Video")
+                            VideoPlayerHelper.launchSystemPlayer(context, videoDirectUrl, "Multi AI - Ending Video")
                         }
                     }
                 }
             }
 
-            // Main Video Player Area
+            // Video Player Area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .background(Color.Black)
             ) {
-                // Internal Media Player (Hardware accelerated WebView)
                 AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
@@ -233,7 +232,6 @@ fun IntroVideoScreen(
                     }
                 )
 
-                // Overlay prompt jika pengguna memilih MX Player atau VLC
                 if (selectedPlayer != VideoPlayerHelper.PlayerType.INTERNAL) {
                     Box(
                         modifier = Modifier
@@ -255,14 +253,14 @@ fun IntroVideoScreen(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "Video Sedang Dimainkan Melalui ${selectedPlayer.displayName}",
+                                text = "Ending Video Dimainkan Melalui ${selectedPlayer.displayName}",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = Color.White,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Jika video tidak dibuka secara automatik, tekan butang di bawah untuk membuka semula.",
+                                text = "Ketik butang di bawah untuk membuka semula di pemain luaran.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.LightGray,
                                 textAlign = TextAlign.Center
@@ -273,11 +271,11 @@ fun IntroVideoScreen(
                                     onClick = {
                                         when (selectedPlayer) {
                                             VideoPlayerHelper.PlayerType.MX_PLAYER ->
-                                                VideoPlayerHelper.launchMxPlayer(context, videoDirectUrl, "Intro Video")
+                                                VideoPlayerHelper.launchMxPlayer(context, videoDirectUrl, "Ending Video")
                                             VideoPlayerHelper.PlayerType.VLC ->
-                                                VideoPlayerHelper.launchVlcPlayer(context, videoDirectUrl, "Intro Video")
+                                                VideoPlayerHelper.launchVlcPlayer(context, videoDirectUrl, "Ending Video")
                                             else ->
-                                                VideoPlayerHelper.launchSystemPlayer(context, videoDirectUrl, "Intro Video")
+                                                VideoPlayerHelper.launchSystemPlayer(context, videoDirectUrl, "Ending Video")
                                         }
                                     },
                                     colors = ButtonDefaults.buttonColors(
@@ -290,7 +288,7 @@ fun IntroVideoScreen(
                                 ) {
                                     Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Buka Semula Video")
+                                    Text("Buka Semula")
                                 }
 
                                 Button(
@@ -310,7 +308,7 @@ fun IntroVideoScreen(
                 }
             }
 
-            // Bottom Navigation Overlay
+            // Bottom Actions: Return to Chat or Exit App
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color(0xFF0A0F1D)
@@ -322,42 +320,59 @@ fun IntroVideoScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Tekan Butang Hijau Di Bawah Untuk Mula Sembang 🎤",
+                        text = "Terima kasih telah menggunakan Multi AI! ✨",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF22C55E),
+                        color = Color(0xFF00E5FF),
                         textAlign = TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    // Butang Besar Mudah Ditekan untuk Pengguna
-                    Button(
-                        onClick = onContinue,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF22C55E)),
-                        shape = RoundedCornerShape(28.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp)
-                            .testTag("continue_to_app_button")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        Button(
+                            onClick = onReturnToChat,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00E5FF)),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(50.dp)
                         ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "TERUSKAN KE MULTI AI",
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 1.sp
-                                ),
+                                text = "KEMBALI KE SEMBANG",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                 color = Color.Black
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
+                        }
+
+                        Button(
+                            onClick = onExitApp,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                            shape = RoundedCornerShape(20.dp),
+                            modifier = Modifier
+                                .weight(0.9f)
+                                .height(50.dp)
+                        ) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                                contentDescription = "Teruskan",
-                                tint = Color.Black,
-                                modifier = Modifier.size(24.dp)
+                                imageVector = Icons.Default.ExitToApp,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "TUTUP APP",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White
                             )
                         }
                     }
@@ -367,42 +382,6 @@ fun IntroVideoScreen(
                     WatermarkFooter()
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun PlayerSelectBadge(
-    label: String,
-    isSelected: Boolean,
-    activeColor: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .border(
-                1.dp,
-                if (isSelected) activeColor else Color.White.copy(alpha = 0.2f),
-                RoundedCornerShape(8.dp)
-            )
-            .clickable(onClick = onClick),
-        color = if (isSelected) activeColor.copy(alpha = 0.25f) else Color.White.copy(alpha = 0.06f)
-    ) {
-        Box(
-            modifier = Modifier.padding(vertical = 6.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                ),
-                color = if (isSelected) activeColor else Color.White.copy(alpha = 0.8f),
-                fontSize = 11.sp,
-                maxLines = 1
-            )
         }
     }
 }

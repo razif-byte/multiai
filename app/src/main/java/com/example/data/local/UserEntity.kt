@@ -10,6 +10,7 @@ data class UserEntity(
     val username: String,
     val email: String,
     val passwordHash: String,
+    val authProvider: String = "local",
     val preferredModelId: String = "gemini",
     val preferredLanguageCode: String = "ms",
     val isVip: Boolean = false,

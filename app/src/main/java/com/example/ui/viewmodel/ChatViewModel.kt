@@ -77,7 +77,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val isVoiceIlliterateMode: StateFlow<Boolean> = _isVoiceIlliterateMode.asStateFlow()
 
     // Intro full-screen video
-    private val _showIntroVideo = MutableStateFlow(!prefs.getBoolean("is_first_launch_done", false))
+    private val currentIntroVideoId = "EvwdsI9G6-o"
+    private val _showIntroVideo = MutableStateFlow(
+        prefs.getString("seen_intro_video_id", "") != currentIntroVideoId
+    )
     val showIntroVideo: StateFlow<Boolean> = _showIntroVideo.asStateFlow()
 
     // Dark Theme: 1 = Dark (default), 2 = Light, 0 = System
@@ -100,6 +103,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _showFloatingMusicBar = MutableStateFlow(false)
     val showFloatingMusicBar: StateFlow<Boolean> = _showFloatingMusicBar.asStateFlow()
+
+    // Ambassador Model Background & Profile
+    private val _showAmbassadorBackground = MutableStateFlow(true)
+    val showAmbassadorBackground: StateFlow<Boolean> = _showAmbassadorBackground.asStateFlow()
+
+    private val _ambassadorAlpha = MutableStateFlow(0.32f)
+    val ambassadorAlpha: StateFlow<Float> = _ambassadorAlpha.asStateFlow()
+
+    private val _showAmbassadorDialog = MutableStateFlow(false)
+    val showAmbassadorDialog: StateFlow<Boolean> = _showAmbassadorDialog.asStateFlow()
 
     // Modals
     private val _showModelPicker = MutableStateFlow(false)
@@ -136,14 +149,29 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Ending Video
+    private val _showEndingVideo = MutableStateFlow(false)
+    val showEndingVideo: StateFlow<Boolean> = _showEndingVideo.asStateFlow()
+
     fun completeIntroVideo() {
-        prefs.edit().putBoolean("is_first_launch_done", true).apply()
+        prefs.edit()
+            .putBoolean("is_first_launch_done", true)
+            .putString("seen_intro_video_id", currentIntroVideoId)
+            .apply()
         _showIntroVideo.value = false
         tts.speak("Selamat datang ke ruang sembang Multi AI. Ketik mikrofon untuk mula bercakap.")
     }
 
     fun replayIntroVideo() {
         _showIntroVideo.value = true
+    }
+
+    fun playEndingVideo() {
+        _showEndingVideo.value = true
+    }
+
+    fun closeEndingVideo() {
+        _showEndingVideo.value = false
     }
 
     fun sendMessage(promptText: String) {
@@ -334,6 +362,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun setUnsplashTheme(preset: UnsplashPreset, dimAlpha: Float) {
         _currentUnsplash.value = preset
         _unsplashDim.value = dimAlpha
+    }
+
+    fun setAmbassadorBackground(enabled: Boolean) {
+        _showAmbassadorBackground.value = enabled
+    }
+
+    fun setAmbassadorAlpha(alpha: Float) {
+        _ambassadorAlpha.value = alpha
+    }
+
+    fun setAmbassadorDialogVisible(visible: Boolean) {
+        _showAmbassadorDialog.value = visible
     }
 
     override fun onCleared() {

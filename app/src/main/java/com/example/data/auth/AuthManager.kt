@@ -95,10 +95,91 @@ class AuthManager(
             username = guestName,
             email = guestEmail,
             passwordHash = hashPassword("guest123"),
+            authProvider = "guest",
             isLoggedIn = true
         )
         userDao.insertUser(guestUser)
         _currentUser.value = guestUser
+        return true
+    }
+
+    suspend fun loginWithGoogle(emailInput: String = "laptoprazif@gmail.com", displayName: String = "Razif (Google)"): Boolean {
+        _authError.value = null
+        val cleanEmail = emailInput.trim().lowercase()
+        userDao.setAllLoggedOut()
+        val existing = userDao.getUserByEmail(cleanEmail)
+        if (existing != null) {
+            userDao.setLoggedIn(existing.id)
+            _currentUser.value = existing.copy(isLoggedIn = true, authProvider = "google")
+            return true
+        }
+
+        val newUser = UserEntity(
+            id = UUID.randomUUID().toString(),
+            username = displayName,
+            email = cleanEmail,
+            passwordHash = hashPassword("google_oauth_${cleanEmail}"),
+            authProvider = "google",
+            isVip = true,
+            isLoggedIn = true
+        )
+        userDao.insertUser(newUser)
+        _currentUser.value = newUser
+        return true
+    }
+
+    suspend fun loginWithNasadef(memberIdOrEmail: String = "nasadef_member@nasadef.com.my", displayName: String = "Ahli Rasmi Nasadef"): Boolean {
+        _authError.value = null
+        val cleanEmail = if (memberIdOrEmail.contains("@")) {
+            memberIdOrEmail.trim().lowercase()
+        } else {
+            "${memberIdOrEmail.trim().lowercase()}@nasadef.com.my"
+        }
+
+        userDao.setAllLoggedOut()
+        val existing = userDao.getUserByEmail(cleanEmail)
+        if (existing != null) {
+            userDao.setLoggedIn(existing.id)
+            _currentUser.value = existing.copy(isLoggedIn = true, authProvider = "nasadef", isVip = true)
+            return true
+        }
+
+        val newUser = UserEntity(
+            id = UUID.randomUUID().toString(),
+            username = displayName,
+            email = cleanEmail,
+            passwordHash = hashPassword("nasadef_sso_${cleanEmail}"),
+            authProvider = "nasadef",
+            isVip = true,
+            isLoggedIn = true
+        )
+        userDao.insertUser(newUser)
+        _currentUser.value = newUser
+        return true
+    }
+
+    suspend fun loginWithMicrosoft(emailInput: String = "user@outlook.com", displayName: String = "Pengguna Microsoft"): Boolean {
+        _authError.value = null
+        val cleanEmail = emailInput.trim().lowercase()
+        userDao.setAllLoggedOut()
+        val existing = userDao.getUserByEmail(cleanEmail)
+        if (existing != null) {
+            userDao.setLoggedIn(existing.id)
+            _currentUser.value = existing.copy(isLoggedIn = true, authProvider = "microsoft")
+            return true
+        }
+
+        val newUser = UserEntity(
+            id = UUID.randomUUID().toString(),
+            username = displayName,
+            email = cleanEmail,
+            passwordHash = hashPassword("microsoft_oauth_${cleanEmail}"),
+            authProvider = "microsoft",
+            isVip = true,
+            isLoggedIn = true
+        )
+        userDao.insertUser(newUser)
+        _currentUser.value = newUser
         return true
     }
 

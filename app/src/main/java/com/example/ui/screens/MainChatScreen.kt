@@ -41,6 +41,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Diamond
@@ -80,6 +81,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -96,6 +98,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.R
+import com.example.ui.components.AmbassadorProfileDialog
 import com.example.ui.components.AntigravityHud
 import com.example.ui.components.AuthDialog
 import com.example.ui.components.BackgroundMusicDialog
@@ -108,6 +111,7 @@ import com.example.ui.components.PaymentSubscriptionModal
 import com.example.ui.components.PictogramActionGrid
 import com.example.ui.components.UnsplashThemeDialog
 import com.example.ui.components.WatermarkFooter
+import com.example.ui.screens.EndingVideoScreen
 import com.example.ui.viewmodel.ChatViewModel
 import java.util.Locale
 
@@ -117,8 +121,10 @@ fun MainChatScreen(
     viewModel: ChatViewModel
 ) {
     val showIntroVideo by viewModel.showIntroVideo.collectAsStateWithLifecycle()
+    val showEndingVideo by viewModel.showEndingVideo.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
-    // 1. Sekiranya kali pertama dibuka, paparkan video YouTube secara skrin penuh
+    // 1. Sekiranya kali pertama dibuka atau dipilih, paparkan video intro (MX Player / VLC / Internal)
     if (showIntroVideo) {
         IntroVideoScreen(
             tts = viewModel.tts,
@@ -127,7 +133,18 @@ fun MainChatScreen(
         return
     }
 
-    val context = LocalContext.current
+    // 2. Sekiranya video ending dipanggil, paparkan video ending (MX Player / VLC / Internal)
+    if (showEndingVideo) {
+        EndingVideoScreen(
+            tts = viewModel.tts,
+            onReturnToChat = { viewModel.closeEndingVideo() },
+            onExitApp = {
+                viewModel.closeEndingVideo()
+                (context as? Activity)?.finishAffinity()
+            }
+        )
+        return
+    }
     val messages by viewModel.messages.collectAsStateWithLifecycle()
     val selectedModel by viewModel.selectedModel.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
@@ -158,6 +175,9 @@ fun MainChatScreen(
     val showAuthDialog by viewModel.showAuthDialog.collectAsStateWithLifecycle()
     val showLanguageSheet by viewModel.showLanguageSheet.collectAsStateWithLifecycle()
     val showFloatingMusicBar by viewModel.showFloatingMusicBar.collectAsStateWithLifecycle()
+    val showAmbassadorBackground by viewModel.showAmbassadorBackground.collectAsStateWithLifecycle()
+    val ambassadorAlpha by viewModel.ambassadorAlpha.collectAsStateWithLifecycle()
+    val showAmbassadorDialog by viewModel.showAmbassadorDialog.collectAsStateWithLifecycle()
 
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -297,6 +317,24 @@ fun MainChatScreen(
                         }
                     }
 
+                    // Model Duta AI Avatar
+                    Surface(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, Color(0xFFEC4899), CircleShape)
+                            .clickable { viewModel.setAmbassadorDialogVisible(true) }
+                            .testTag("appbar_ambassador_button"),
+                        color = Color.Transparent
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_ambassador),
+                            contentDescription = "Model Duta Multi AI",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+
                     // Mod Mesra Suara & Gambar (Untuk Bukan Pembaca)
                     IconButton(
                         onClick = { viewModel.toggleVoiceIlliterateMode() },
@@ -348,6 +386,17 @@ fun MainChatScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
+                                text = { Text("Model Duta & Gambar Latar") },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.setAmbassadorDialogVisible(true)
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFEC4899))
+                                }
+                            )
+
+                            DropdownMenuItem(
                                 text = { Text("Langganan VIP / Sumbangan") },
                                 onClick = {
                                     showMenu = false
@@ -370,13 +419,24 @@ fun MainChatScreen(
                             )
 
                             DropdownMenuItem(
-                                text = { Text("Tonton Video Pengenalan") },
+                                text = { Text("🎬 Tonton Video Intro (MX/VLC/Dalaman)") },
                                 onClick = {
                                     showMenu = false
                                     viewModel.replayIntroVideo()
                                 },
                                 leadingIcon = {
                                     Icon(Icons.Default.PlayCircle, contentDescription = null, tint = Color(0xFFEF4444))
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = { Text("🏁 Tonton Video Ending (Video Penutup)") },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.playEndingVideo()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.PlayCircle, contentDescription = null, tint = Color(0xFFEAB308))
                                 }
                             )
 
@@ -470,6 +530,24 @@ fun MainChatScreen(
                         .padding(horizontal = 12.dp, vertical = 3.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item {
+                        QuickChip("🎬 Intro Video", Color(0xFFEF4444)) {
+                            viewModel.replayIntroVideo()
+                        }
+                    }
+                    item {
+                        QuickChip("🏁 Ending Video", Color(0xFFEAB308)) {
+                            viewModel.playEndingVideo()
+                        }
+                    }
+                    item {
+                        QuickChip(
+                            if (showAmbassadorBackground) "✨ Duta Latar (${(ambassadorAlpha * 100).toInt()}%)" else "✨ Duta Maya",
+                            Color(0xFFEC4899)
+                        ) {
+                            viewModel.setAmbassadorDialogVisible(true)
+                        }
+                    }
                     item {
                         QuickChip("🎵 Cipta Muzik Melodi", Color(0xFF06B6D4)) {
                             viewModel.selectModel(com.example.data.model.AiModel.MUZIKGPT)
@@ -596,8 +674,29 @@ fun MainChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // Latar Belakang Unsplash atau Gelap
-            if (currentUnsplash.imageUrl.isNotBlank()) {
+            // Latar Belakang Model Duta Separa Telus (Default) atau Unsplash
+            if (showAmbassadorBackground) {
+                Image(
+                    painter = painterResource(id = R.drawable.img_ambassador),
+                    contentDescription = "Model Duta Multi AI",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(ambassadorAlpha),
+                    contentScale = ContentScale.Crop
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.50f),
+                                    MaterialTheme.colorScheme.background.copy(alpha = 0.72f)
+                                )
+                            )
+                        )
+                )
+            } else if (currentUnsplash.imageUrl.isNotBlank()) {
                 AsyncImage(
                     model = currentUnsplash.imageUrl,
                     contentDescription = "Latar Belakang",
@@ -701,6 +800,17 @@ fun MainChatScreen(
     }
 
     // Modal Sheets and Dialogs
+    if (showAmbassadorDialog) {
+        AmbassadorProfileDialog(
+            tts = viewModel.tts,
+            isEnabled = showAmbassadorBackground,
+            alpha = ambassadorAlpha,
+            onToggleEnabled = { viewModel.setAmbassadorBackground(it) },
+            onAlphaChanged = { viewModel.setAmbassadorAlpha(it) },
+            onDismiss = { viewModel.setAmbassadorDialogVisible(false) }
+        )
+    }
+
     if (showModelPicker) {
         ModelSelectorSheet(
             sheetState = sheetState,
