@@ -1,0 +1,6 @@
+{
+  "name": "Multi AI",
+  "description": "Multi-Embed AI Chatbot with Antigravity engine, multi-model fallback, voice TTS, and offline storage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
